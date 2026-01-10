@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(crystal init:*)",
+      "Bash(shards build:*)",
+      "Bash(crystal tool format:*)",
+      "Bash(ameba:*)",
+      "Bash(./bin/raytracer:*)",
+      "Bash(crystal spec:*)",
+      "Bash(wget:*)",
+      "Bash(crystal build:*)",
+      "mcp__web-reader__webReader",
+      "Bash(crystal eval:*)",
+      "Bash(CRYSTAL_WORKERS=1 ./bin/raytracer:*)",
+      "Bash(CRYSTAL_WORKERS=2 ./bin/raytracer:*)",
+      "Bash(CRYSTAL_WORKERS=4 ./bin/raytracer:*)",
+      "Bash(CRYSTAL_WORKERS=8 ./bin/raytracer:*)",
+      "Bash(CRYSTAL_WORKERS=16 ./bin/raytracer:*)",
+      "Bash(for:*)",
+      "Bash(do CRYSTAL_WORKERS=8 ./bin/raytracer:*)",
+      "Bash(done:*)",
+      "Bash(/tmp/raytracer/rust/target/release/ray_tracer:*)",
+      "Bash(do:*)",
+      "mcp__web-search-prime__webSearchPrime",
+      "Bash(git add:*)"
+    ]
+  }
+}
