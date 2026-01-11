@@ -147,8 +147,29 @@ class CheckerboardSurface
   end
 end
 
+class MatteSurface
+  include Surface
+
+  def diffuse(pos : Vector) : Color
+    COLOR_WHITE
+  end
+
+  def reflect(pos : Vector) : Float64
+    0.0_f64
+  end
+
+  def specular(pos : Vector) : Color
+    COLOR_DEFAULT_COLOR
+  end
+
+  def roughness : Int32
+    250
+  end
+end
+
 SURFACE_SHINY        = ShinySurface.new
 SURFACE_CHECKERBOARD = CheckerboardSurface.new
+SURFACE_MATTE        = MatteSurface.new
 
 class Camera
   getter pos : Vector
