@@ -6,6 +6,9 @@
 # Run with:
 #   CRYSTAL_WORKERS=16 ./bin/animated
 #
+# With custom resolution:
+#   CRYSTAL_WORKERS=16 SIZE=800 ./bin/animated
+#
 # With antialiasing (slower but smoother):
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/animated
 #
@@ -17,8 +20,8 @@
 require "sdl"
 require "./raytracer/common"
 
-WIDTH  = 500
-HEIGHT = 500
+WIDTH  = (ENV["SIZE"]? || "500").to_i
+HEIGHT = WIDTH
 
 # Animated scene with time-based animations
 class AnimatedScene < DefaultScene

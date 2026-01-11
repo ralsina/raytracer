@@ -6,6 +6,9 @@
 # Run with:
 #   CRYSTAL_WORKERS=16 ./bin/raytracer
 #
+# With custom resolution:
+#   CRYSTAL_WORKERS=16 SIZE=800 ./bin/raytracer
+#
 # With antialiasing:
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/raytracer
 #
@@ -18,8 +21,9 @@
 require "crimage"
 require "./raytracer/common"
 
-width = 500
-height = 500
+size = (ENV["SIZE"]? || "500").to_i
+width = size
+height = size
 
 samples = (ENV["AA_SAMPLES"]? || "1").to_i
 
