@@ -37,11 +37,11 @@ class AnimatedScene < DefaultScene
         0.5_f64,
         SURFACE_SHINY
       ),
-      # Add a third sphere that bounces at medium speed on the other side (matte, not shiny)
+      # Add a third sphere that bounces at medium speed on the other side (matte red, not shiny)
       Sphere.new(
         Vector.new(1.5_f64, 0.6_f64 + Math.sin(time * 2.8 + 2.0).abs.to_f64 * 0.7_f64, 0.5_f64),
         0.6_f64,
-        SURFACE_MATTE
+        MatteSurface.new(Color.new(0.9_f64, 0.1_f64, 0.1_f64))
       ),
     ] of Thing
 
