@@ -22,7 +22,12 @@
       "Bash(/tmp/raytracer/rust/target/release/ray_tracer:*)",
       "Bash(do:*)",
       "mcp__web-search-prime__webSearchPrime",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Skill(superpowers:brainstorming)",
+      "Bash(shards install:*)",
+      "Bash(ls:*)"
     ]
   }
 }

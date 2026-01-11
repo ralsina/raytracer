@@ -2,5 +2,5 @@ version: 2.0
 shards:
   crimage:
     git: https://github.com/naqvis/crimage.git
-    version: 1.0.2+git.commit.0bab3ccf53a6a4e9a6da3a13411bdfc5e930556d
+    version: 1.0.4+git.commit.3ac45b04ed06d5cfc8e508c4b6c7303c652aba0e
 
