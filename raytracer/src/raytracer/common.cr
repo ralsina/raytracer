@@ -348,7 +348,21 @@ class RayTracer
       lcolor = light.color.scale(illum)
 
       specular = livec.dot(rd.norm)
-      scolor = specular > 0 ? light.color.scale(((specular.clamp(0.0_f64, 1.0_f64).to_f64 ** surface.roughness).to_f64.clamp(0.0_f64, 1.0_f64))) : COLOR_DEFAULT_COLOR
+      if specular > 0
+        # Safe pow to prevent overflow with large exponents
+        spec_clamped = specular.clamp(0.0_f64, 0.99_f64)
+        begin
+          spec_pow = spec_clamped ** surface.roughness
+          if !spec_pow.finite? || spec_pow.abs > 1e100_f64
+            spec_pow = 1.0_f64
+          end
+          scolor = light.color.scale(spec_pow.clamp(0.0_f64, 1.0_f64))
+        rescue
+          scolor = COLOR_DEFAULT_COLOR
+        end
+      else
+        scolor = COLOR_DEFAULT_COLOR
+      end
 
       color = color + (surface.diffuse(pos) * lcolor) + (surface.specular(pos) * scolor)
     end
