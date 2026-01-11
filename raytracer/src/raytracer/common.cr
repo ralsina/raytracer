@@ -426,12 +426,14 @@ class RayTracer
               prev_right_color = color_right
 
               # Check for edge: if left and right differ significantly, use more samples
+              # Threshold scales with samples - higher AA = more aggressive edge detection
+              edge_threshold = 0.05_f64 / (samples.to_f64 ** 0.5_f64)
               color_diff = (color_left.not_nil!.r - color_right.r).abs +
                            (color_left.not_nil!.g - color_right.g).abs +
                            (color_left.not_nil!.b - color_right.b).abs
 
-              if color_diff > 0.1_f64 && samples >= 4
-                # Edge detected! Need 4 corner samples
+              if color_diff > edge_threshold && samples >= 4
+                # Edge detected! Use 4 corner samples
                 # We already have left top (reused) and right top (traced)
                 r_sum += color_left.not_nil!.r
                 g_sum += color_left.not_nil!.g
