@@ -5,6 +5,8 @@ authors:
   - Roberto Alsina <roberto.alsina@gmail.com>
 
 targets:
+  benchmark:
+    main: src/benchmark.cr
   raytracer:
     main: src/raytracer.cr
   animated:

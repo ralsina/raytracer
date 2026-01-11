@@ -1,4 +1,6 @@
-# Raytracer - Ported from Ruby to Crystal
+# Raytracer - Full-featured version with AA and configurable resolution
+#
+# For pure benchmarking, use benchmark.cr instead
 #
 # Build options:
 #   shards build --release -Dpreview_mt --mcpu=native --mcmodel=kernel
@@ -9,14 +11,13 @@
 # With custom resolution:
 #   CRYSTAL_WORKERS=16 SIZE=800 ./bin/raytracer
 #
-# With antialiasing:
+# With antialiasing (adaptive, with ray reuse):
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/raytracer
+#   CRYSTAL_WORKERS=16 AA_SAMPLES=32 SIZE=1000 ./bin/raytracer
 #
-# Performance: <7ms for 500x500 image with 16 workers
-# Comparison:
-#   Ruby original: ~550ms
-#   This Crystal version: ~7ms (~80x faster)
-#   Rust version: ~7ms (comparable)
+# Environment variables:
+#   SIZE - Image size (default 500, square images)
+#   AA_SAMPLES - Antialiasing samples (default 1, use 4-32 for AA)
 #
 require "crimage"
 require "./raytracer/common"
