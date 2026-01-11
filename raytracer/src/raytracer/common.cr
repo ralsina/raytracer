@@ -4,14 +4,14 @@
 require "mutex"
 
 struct Vector
-  getter x : Float32
-  getter y : Float32
-  getter z : Float32
+  getter x : Float64
+  getter y : Float64
+  getter z : Float64
 
-  def initialize(@x : Float32, @y : Float32, @z : Float32)
+  def initialize(@x : Float64, @y : Float64, @z : Float64)
   end
 
-  def scale(k : Float32) : Vector
+  def scale(k : Float64) : Vector
     Vector.new(@x * k, @y * k, @z * k)
   end
 
@@ -23,18 +23,18 @@ struct Vector
     Vector.new(@x + other.x, @y + other.y, @z + other.z)
   end
 
-  def dot(other : Vector) : Float32
+  def dot(other : Vector) : Float64
     @x * other.x + @y * other.y + @z * other.z
   end
 
-  def mag : Float32
+  def mag : Float64
     Math.sqrt(@x * @x + @y * @y + @z * @z)
   end
 
   def norm : Vector
     mag_val = mag
-    return Vector.new(Float32::INFINITY, Float32::INFINITY, Float32::INFINITY) if mag_val == 0
-    scale(1.0_f32 / mag_val)
+    return Vector.new(Float64::INFINITY, Float64::INFINITY, Float64::INFINITY) if mag_val == 0
+    scale(1.0 / mag_val)
   end
 
   def cross(other : Vector) : Vector
@@ -43,14 +43,14 @@ struct Vector
 end
 
 struct Color
-  getter r : Float32
-  getter g : Float32
-  getter b : Float32
+  getter r : Float64
+  getter g : Float64
+  getter b : Float64
 
-  def initialize(@r : Float32, @g : Float32, @b : Float32)
+  def initialize(@r : Float64, @g : Float64, @b : Float64)
   end
 
-  def scale(k : Float32) : Color
+  def scale(k : Float64) : Color
     Color.new(@r * k, @g * k, @b * k)
   end
 
@@ -63,47 +63,47 @@ struct Color
   end
 
   def self.to_drawing_color(c : Color) : Tuple(UInt8, UInt8, UInt8)
-    r = (c.r.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-    g = (c.g.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-    b = (c.b.clamp(0.0_f32, 1.0_f32) * 255).to_u8
+    r = (c.r.clamp(0.0, 1.0) * 255).to_u8
+    g = (c.g.clamp(0.0, 1.0) * 255).to_u8
+    b = (c.b.clamp(0.0, 1.0) * 255).to_u8
     {r, g, b}
   end
 
   # HSV to RGB conversion for color cycling
-  def self.from_hsv(h : Float32, s : Float32, v : Float32) : Color
-    h = h % 360.0_f32
+  def self.from_hsv(h : Float64, s : Float64, v : Float64) : Color
+    h = h % 360.0
     c = v * s
-    x = c * (1.0_f32 - ((h / 60.0_f32) % 2.0_f32 - 1.0_f32).abs)
+    x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs)
     m = v - c
 
-    if h < 60.0_f32
-      r, g, b = c, x, 0.0_f32
-    elsif h < 120.0_f32
-      r, g, b = x, c, 0.0_f32
-    elsif h < 180.0_f32
-      r, g, b = 0.0_f32, c, x
-    elsif h < 240.0_f32
-      r, g, b = 0.0_f32, x, c
-    elsif h < 300.0_f32
-      r, g, b = x, 0.0_f32, c
+    if h < 60.0
+      r, g, b = c, x, 0.0
+    elsif h < 120.0
+      r, g, b = x, c, 0.0
+    elsif h < 180.0
+      r, g, b = 0.0, c, x
+    elsif h < 240.0
+      r, g, b = 0.0, x, c
+    elsif h < 300.0
+      r, g, b = x, 0.0, c
     else
-      r, g, b = c, 0.0_f32, x
+      r, g, b = c, 0.0, x
     end
 
     Color.new(r + m, g + m, b + m)
   end
 end
 
-COLOR_WHITE         = Color.new(1.0_f32, 1.0_f32, 1.0_f32)
-COLOR_GREY          = Color.new(0.5_f32, 0.5_f32, 0.5_f32)
-COLOR_BLACK         = Color.new(0.0_f32, 0.0_f32, 0.0_f32)
+COLOR_WHITE         = Color.new(1.0_f64, 1.0_f64, 1.0_f64)
+COLOR_GREY          = Color.new(0.5_f64, 0.5_f64, 0.5_f64)
+COLOR_BLACK         = Color.new(0.0_f64, 0.0_f64, 0.0_f64)
 COLOR_BACKGROUND    = COLOR_BLACK
 COLOR_DEFAULT_COLOR = COLOR_BLACK
 
 module Surface
   abstract def diffuse(pos : Vector) : Color
   abstract def specular(pos : Vector) : Color
-  abstract def reflect(pos : Vector) : Float32
+  abstract def reflect(pos : Vector) : Float64
   abstract def roughness : Int32
 end
 
@@ -118,8 +118,8 @@ class ShinySurface
     COLOR_GREY
   end
 
-  def reflect(pos : Vector) : Float32
-    0.7_f32
+  def reflect(pos : Vector) : Float64
+    0.7_f64
   end
 
   def roughness : Int32
@@ -134,8 +134,8 @@ class CheckerboardSurface
     ((pos.z).floor.to_i + (pos.x).floor.to_i).odd? ? COLOR_WHITE : COLOR_BLACK
   end
 
-  def reflect(pos : Vector) : Float32
-    ((pos.z).floor.to_i + (pos.x).floor.to_i).odd? ? 0.1_f32 : 0.7_f32
+  def reflect(pos : Vector) : Float64
+    ((pos.z).floor.to_i + (pos.x).floor.to_i).odd? ? 0.1_f64 : 0.7_f64
   end
 
   def specular(pos : Vector) : Color
@@ -157,16 +157,16 @@ class Camera
   getter up : Vector
 
   def initialize(pos : Vector, look_at : Vector)
-    down = Vector.new(0.0_f32, -1.0_f32, 0.0_f32)
+    down = Vector.new(0.0_f64, -1.0_f64, 0.0_f64)
     @pos = pos
     @forward = (look_at - @pos).norm
-    @right = (@forward.cross(down)).norm.scale(1.5_f32)
-    @up = (@forward.cross(@right)).norm.scale(1.5_f32)
+    @right = (@forward.cross(down)).norm.scale(1.5_f64)
+    @up = (@forward.cross(@right)).norm.scale(1.5_f64)
   end
 end
 
 record Ray, start : Vector, dir : Vector
-record Intersection, thing : Thing, ray : Ray, dist : Float32
+record Intersection, thing : Thing, ray : Ray, dist : Float64
 
 module Thing
   abstract def normal(pos : Vector) : Vector
@@ -177,10 +177,10 @@ end
 class Sphere
   include Thing
 
-  getter radius2 : Float32
+  getter radius2 : Float64
   getter center : Vector
 
-  def initialize(@center : Vector, radius : Float32, @surface : Surface)
+  def initialize(@center : Vector, radius : Float64, @surface : Surface)
     @radius2 = radius * radius
   end
 
@@ -195,7 +195,7 @@ class Sphere
   def intersect(ray : Ray) : Intersection?
     eo = @center - ray.start
     v = eo.dot(ray.dir)
-    dist = 0.0_f32
+    dist = 0.0_f64
     if v >= 0
       disc = @radius2 - (eo.dot(eo) - v * v)
       dist = v - Math.sqrt(disc) if disc >= 0
@@ -208,9 +208,9 @@ class Plane
   include Thing
 
   getter norm : Vector
-  getter offset : Float32
+  getter offset : Float64
 
-  def initialize(@norm : Vector, @offset : Float32, @surface : Surface)
+  def initialize(@norm : Vector, @offset : Float64, @surface : Surface)
   end
 
   def normal(pos : Vector) : Vector
@@ -244,7 +244,7 @@ class RayTracer
   MAX_DEPTH = 5
 
   def intersections(ray : Ray, scene : Scene) : Intersection?
-    closest = Float32::INFINITY
+    closest = Float64::INFINITY
     closest_inter = nil
     things = scene.things
     things.each do |item|
@@ -257,7 +257,7 @@ class RayTracer
     closest_inter
   end
 
-  def test_ray(ray : Ray, scene : Scene) : Float32?
+  def test_ray(ray : Ray, scene : Scene) : Float64?
     isect = intersections(ray, scene)
     isect && isect.dist
   end
@@ -272,7 +272,7 @@ class RayTracer
     pos = isect.ray.start + (d.scale(isect.dist))
     normal = isect.thing.normal(pos)
     dot_val = normal.dot(d)
-    reflect_dir = d - (normal.scale(2.0_f32 * dot_val))
+    reflect_dir = d - (normal.scale(2.0_f64 * dot_val))
     natural_color = COLOR_BACKGROUND + get_natural_color(isect.thing, pos, normal, reflect_dir, scene)
     reflected_color = depth >= MAX_DEPTH ? COLOR_GREY : get_reflection_color(isect.thing, pos, normal, reflect_dir, scene, depth)
     natural_color + reflected_color
@@ -303,7 +303,7 @@ class RayTracer
       lcolor = light.color.scale(illum)
 
       specular = livec.dot(rd.norm)
-      scolor = specular > 0 ? light.color.scale(specular ** surface.roughness) : COLOR_DEFAULT_COLOR
+      scolor = specular > 0 ? light.color.scale(((specular.clamp(0.0_f64, 1.0_f64).to_f64 ** surface.roughness).to_f64.clamp(0.0_f64, 1.0_f64))) : COLOR_DEFAULT_COLOR
 
       color = color + (surface.diffuse(pos) * lcolor) + (surface.specular(pos) * scolor)
     end
@@ -357,18 +357,18 @@ class RayTracer
           break if y == -1
 
           row_offset = y * width * 4
-          recenter_y = -((y - (height >> 1)) / (height << 1)).to_f32
+          recenter_y = -((y - (height >> 1)) / (height << 1)).to_f64
           up_scaled = cam_up.scale(recenter_y)
 
           width.times do |x|
-            recenter_x = ((x - (width >> 1)) / (width << 1)).to_f32
+            recenter_x = ((x - (width >> 1)) / (width << 1)).to_f64
             ray_dir = (cam_forward + (cam_right.scale(recenter_x) + up_scaled)).norm
             color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
 
             offset = row_offset + (x * 4)
-            buffer[offset] = (color.r.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-            buffer[offset + 1] = (color.g.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-            buffer[offset + 2] = (color.b.clamp(0.0_f32, 1.0_f32) * 255).to_u8
+            buffer[offset] = (color.r.clamp(0.0_f64, 1.0_f64) * 255).to_u8
+            buffer[offset + 1] = (color.g.clamp(0.0_f64, 1.0_f64) * 255).to_u8
+            buffer[offset + 2] = (color.b.clamp(0.0_f64, 1.0_f64) * 255).to_u8
             buffer[offset + 3] = 255_u8
           end
         end
@@ -391,17 +391,17 @@ class DefaultScene
 
   def initialize
     @things = [
-      Plane.new(Vector.new(0.0_f32, 1.0_f32, 0.0_f32), 0.0_f32, SURFACE_CHECKERBOARD),
-      Sphere.new(Vector.new(0.0_f32, 1.0_f32, -0.25_f32), 1.0_f32, SURFACE_SHINY),
-      Sphere.new(Vector.new(-1.0_f32, 0.5_f32, 1.5_f32), 0.5_f32, SURFACE_SHINY),
+      Plane.new(Vector.new(0.0_f64, 1.0_f64, 0.0_f64), 0.0_f64, SURFACE_CHECKERBOARD),
+      Sphere.new(Vector.new(0.0_f64, 1.0_f64, -0.25_f64), 1.0_f64, SURFACE_SHINY),
+      Sphere.new(Vector.new(-1.0_f64, 0.5_f64, 1.5_f64), 0.5_f64, SURFACE_SHINY),
     ] of Thing
     @lights = [
-      Light.new(Vector.new(-2.0_f32, 2.5_f32, 0.0_f32), Color.new(0.49_f32, 0.07_f32, 0.07_f32)),
-      Light.new(Vector.new(1.5_f32, 2.5_f32, 1.5_f32), Color.new(0.07_f32, 0.07_f32, 0.49_f32)),
-      Light.new(Vector.new(1.5_f32, 2.5_f32, -1.5_f32), Color.new(0.07_f32, 0.49_f32, 0.071_f32)),
-      Light.new(Vector.new(0.0_f32, 3.5_f32, 0.0_f32), Color.new(0.21_f32, 0.21_f32, 0.35_f32)),
+      Light.new(Vector.new(-2.0_f64, 2.5_f64, 0.0_f64), Color.new(0.49_f64, 0.07_f64, 0.07_f64)),
+      Light.new(Vector.new(1.5_f64, 2.5_f64, 1.5_f64), Color.new(0.07_f64, 0.07_f64, 0.49_f64)),
+      Light.new(Vector.new(1.5_f64, 2.5_f64, -1.5_f64), Color.new(0.07_f64, 0.49_f64, 0.071_f64)),
+      Light.new(Vector.new(0.0_f64, 3.5_f64, 0.0_f64), Color.new(0.21_f64, 0.21_f64, 0.35_f64)),
     ]
-    @camera = Camera.new(Vector.new(3.0_f32, 2.0_f32, 4.0_f32), Vector.new(-1.0_f32, 0.5_f32, 0.0_f32))
+    @camera = Camera.new(Vector.new(3.0_f64, 2.0_f64, 4.0_f64), Vector.new(-1.0_f64, 0.5_f64, 0.0_f64))
   end
 
   def to_scene : Scene

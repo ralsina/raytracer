@@ -17,3 +17,5 @@ license: MIT
 dependencies:
   crimage:
     github: naqvis/crimage
+  sdl:
+    github: ysbaddaden/sdl.cr

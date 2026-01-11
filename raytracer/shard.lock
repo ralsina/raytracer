@@ -4,3 +4,7 @@ shards:
     git: https://github.com/naqvis/crimage.git
     version: 1.0.4+git.commit.3ac45b04ed06d5cfc8e508c4b6c7303c652aba0e
 
+  sdl:
+    git: https://github.com/ysbaddaden/sdl.cr.git
+    version: 0.1.0+git.commit.5a222701cc83aad89e1eab80812af97b12d6188a
+
