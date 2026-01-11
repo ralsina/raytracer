@@ -6,6 +6,9 @@
 # Run with:
 #   CRYSTAL_WORKERS=16 ./bin/animated
 #
+# With antialiasing (slower but smoother):
+#   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/animated
+#
 # Requires SDL2 development libraries:
 #   Ubuntu/Debian: sudo apt install libsdl2-dev
 #   Arch: sudo pacman -S sdl2
@@ -14,8 +17,8 @@
 require "sdl"
 require "./raytracer/common"
 
-WIDTH          = 500
-HEIGHT         = 500
+WIDTH  = 500
+HEIGHT = 500
 
 # Animated scene with time-based animations
 class AnimatedScene < DefaultScene
@@ -146,12 +149,13 @@ while running
   break unless running
 
   # Render scene at this time
+  samples = (ENV["AA_SAMPLES"]? || "1").to_i
   animated_scene = AnimatedScene.new(elapsed)
   scene = animated_scene.to_scene
-  buffer = ray_tracer.render(scene, WIDTH, HEIGHT)
+  buffer = ray_tracer.render(scene, WIDTH, HEIGHT, samples)
 
   # Lock texture and update pixel data
-  texture.lock do |pixels, pitch|
+  texture.lock do |pixels, _|
     # Convert RGBA buffer to RGB (SDL stores as UInt32 per pixel)
     buffer_idx = 0
     (WIDTH * HEIGHT).times do |i|

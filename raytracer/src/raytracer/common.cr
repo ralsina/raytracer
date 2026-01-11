@@ -340,7 +340,7 @@ class RayTracer
     (camera.forward + (camera.right.scale(recenter_x) + camera.up.scale(recenter_y))).norm
   end
 
-  def render(scene : Scene, width : Int32, height : Int32) : Bytes
+  def render(scene : Scene, width : Int32, height : Int32, samples : Int32 = 1) : Bytes
     num_threads = (ENV["CRYSTAL_WORKERS"]? || "8").to_i
     buffer = Bytes.new(width * height * 4)
 
@@ -381,17 +381,35 @@ class RayTracer
 
           row_offset = y * width * 4
           recenter_y = -((y - (height >> 1)) / (height << 1)).to_f64
-          up_scaled = cam_up.scale(recenter_y)
 
           width.times do |x|
-            recenter_x = ((x - (width >> 1)) / (width << 1)).to_f64
-            ray_dir = (cam_forward + (cam_right.scale(recenter_x) + up_scaled)).norm
-            color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+            # Multi-sample for antialiasing
+            r_sum = 0.0_f64
+            g_sum = 0.0_f64
+            b_sum = 0.0_f64
+
+            samples.times do |sample|
+              # Jitter each sample within the pixel
+              jitter_x = sample > 0 ? rand.to_f64 / width - 0.5_f64 / width : 0.0_f64
+              jitter_y = sample > 0 ? rand.to_f64 / height - 0.5_f64 / height : 0.0_f64
+
+              recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_x).to_f64
+              recenter_y_jittered = recenter_y + jitter_y
+              ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+              color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+
+              r_sum += color.r
+              g_sum += color.g
+              b_sum += color.b
+            end
+
+            # Average the samples
+            avg_color = Color.new(r_sum / samples, g_sum / samples, b_sum / samples)
 
             offset = row_offset + (x * 4)
-            buffer[offset] = (color.r.clamp(0.0_f64, 1.0_f64) * 255).to_u8
-            buffer[offset + 1] = (color.g.clamp(0.0_f64, 1.0_f64) * 255).to_u8
-            buffer[offset + 2] = (color.b.clamp(0.0_f64, 1.0_f64) * 255).to_u8
+            buffer[offset] = (avg_color.r.clamp(0.0_f64, 1.0_f64) * 255).to_u8
+            buffer[offset + 1] = (avg_color.g.clamp(0.0_f64, 1.0_f64) * 255).to_u8
+            buffer[offset + 2] = (avg_color.b.clamp(0.0_f64, 1.0_f64) * 255).to_u8
             buffer[offset + 3] = 255_u8
           end
         end
