@@ -18,6 +18,9 @@
 # With custom reflection depth (default 5):
 #   CRYSTAL_WORKERS=16 MAX_DEPTH=10 ./bin/animated
 #
+# With custom background color (hex):
+#   CRYSTAL_WORKERS=16 BACKGROUND_COLOR=1a1a2e ./bin/animated
+#
 # Requires SDL2 development libraries:
 #   Ubuntu/Debian: sudo apt install libsdl2-dev
 #   Arch: sudo pacman -S sdl2
@@ -138,6 +141,7 @@ samples = (ENV["AA_SAMPLES"]? || "1").to_i
 adaptive = (ENV["ADAPTIVE_AA"]? || "1").to_i != 0
 max_depth = (ENV["MAX_DEPTH"]? || "5").to_i
 workers = (ENV["CRYSTAL_WORKERS"]? || "8").to_i
+bg_color = ENV["BACKGROUND_COLOR"]? || "000000"
 
 puts "Animated Raytracer"
 puts "Rendering #{WIDTH}x#{HEIGHT} in real-time"
@@ -148,6 +152,7 @@ puts "  Workers: #{workers}"
 puts "  AA Samples: #{samples}"
 puts "  Adaptive AA: #{adaptive ? "enabled" : "disabled"}"
 puts "  Max Depth: #{max_depth}"
+puts "  Background Color: ##{bg_color}"
 puts ""
 puts "Press ESC or close window to exit"
 puts ""

@@ -23,6 +23,7 @@
 #   AA_SAMPLES - Antialiasing samples (default 1, use 4-32 for AA)
 #   ADAPTIVE_AA - Adaptive mode (default 1, set 0 for full sampling)
 #   MAX_DEPTH - Maximum reflection bounces (default 5)
+#   BACKGROUND_COLOR - Background color in hex (default 000000, e.g. FF0000 for red)
 #
 require "crimage"
 require "./raytracer/common"

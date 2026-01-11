@@ -114,13 +114,44 @@ struct Color
 
     Color.new(r + m, g + m, b + m)
   end
+
+  # Parse color from hex string (e.g., "FF0000" for red)
+  def self.from_hex(hex : String) : Color
+    hex = hex.lstrip('#')
+    case hex.size
+    when 3
+      # Short form: RGB -> RRGGBB
+      r = hex[0].to_i(16) * 17 / 255.0
+      g = hex[1].to_i(16) * 17 / 255.0
+      b = hex[2].to_i(16) * 17 / 255.0
+    when 6
+      r = hex[0..1].to_i(16) / 255.0
+      g = hex[2..3].to_i(16) / 255.0
+      b = hex[4..5].to_i(16) / 255.0
+    else
+      raise "Invalid hex color: #{hex}"
+    end
+    Color.new(r, g, b)
+  end
 end
 
 COLOR_WHITE         = Color.new(1.0_f64, 1.0_f64, 1.0_f64)
 COLOR_GREY          = Color.new(0.5_f64, 0.5_f64, 0.5_f64)
 COLOR_BLACK         = Color.new(0.0_f64, 0.0_f64, 0.0_f64)
-COLOR_BACKGROUND    = COLOR_BLACK
 COLOR_DEFAULT_COLOR = COLOR_BLACK
+
+# Background color from env var or default black
+def get_background_color : Color
+  bg_hex = ENV["BACKGROUND_COLOR"]? || "000000"
+  begin
+    Color.from_hex(bg_hex)
+  rescue
+    STDERR.puts "Invalid BACKGROUND_COLOR: #{bg_hex}, using black"
+    COLOR_BLACK
+  end
+end
+
+COLOR_BACKGROUND = get_background_color
 
 module Surface
   abstract def diffuse(pos : Vector) : Color
