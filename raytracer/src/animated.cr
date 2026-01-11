@@ -133,8 +133,22 @@ ray_tracer = RayTracer.new
 frame_count = 0
 last_fps_update = start_time
 
+# Read settings for display
+samples = (ENV["AA_SAMPLES"]? || "1").to_i
+adaptive = (ENV["ADAPTIVE_AA"]? || "1").to_i != 0
+max_depth = (ENV["MAX_DEPTH"]? || "5").to_i
+workers = (ENV["CRYSTAL_WORKERS"]? || "8").to_i
+
 puts "Animated Raytracer"
 puts "Rendering #{WIDTH}x#{HEIGHT} in real-time"
+puts ""
+puts "Settings:"
+puts "  Resolution: #{WIDTH}x#{HEIGHT}"
+puts "  Workers: #{workers}"
+puts "  AA Samples: #{samples}"
+puts "  Adaptive AA: #{adaptive ? "enabled" : "disabled"}"
+puts "  Max Depth: #{max_depth}"
+puts ""
 puts "Press ESC or close window to exit"
 puts ""
 
@@ -158,7 +172,6 @@ while running
   break unless running
 
   # Render scene at this time
-  samples = (ENV["AA_SAMPLES"]? || "1").to_i
   animated_scene = AnimatedScene.new(elapsed)
   scene = animated_scene.to_scene
   buffer = ray_tracer.render(scene, WIDTH, HEIGHT, samples)
