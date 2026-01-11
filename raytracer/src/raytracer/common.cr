@@ -389,9 +389,18 @@ class RayTracer
             b_sum = 0.0_f64
 
             samples.times do |sample|
-              # Jitter each sample within the pixel
-              jitter_x = sample > 0 ? rand.to_f64 / width - 0.5_f64 / width : 0.0_f64
-              jitter_y = sample > 0 ? rand.to_f64 / height - 0.5_f64 / height : 0.0_f64
+              # Deterministic jitter pattern based on pixel position and sample index
+              # Using a simple Halton-like sequence for well-distributed samples
+              if samples == 1
+                jitter_x = 0.0_f64
+                jitter_y = 0.0_f64
+              else
+                # Use sample index for consistent sub-pixel positions
+                sample_x = (sample * 7) % samples
+                sample_y = (sample * 11) % samples
+                jitter_x = (sample_x.to_f64 / samples.to_f64 - 0.5) / width
+                jitter_y = (sample_y.to_f64 / samples.to_f64 - 0.5) / height
+              end
 
               recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_x).to_f64
               recenter_y_jittered = recenter_y + jitter_y
