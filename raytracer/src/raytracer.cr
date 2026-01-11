@@ -11,13 +11,17 @@
 # With custom resolution:
 #   CRYSTAL_WORKERS=16 SIZE=800 ./bin/raytracer
 #
-# With antialiasing (adaptive, with ray reuse):
+# With antialiasing (adaptive by default, faster):
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/raytracer
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=32 SIZE=1000 ./bin/raytracer
+#
+# With full non-adaptive antialiasing (prettier but slower):
+#   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ADAPTIVE_AA=0 ./bin/raytracer
 #
 # Environment variables:
 #   SIZE - Image size (default 500, square images)
 #   AA_SAMPLES - Antialiasing samples (default 1, use 4-32 for AA)
+#   ADAPTIVE_AA - Adaptive mode (default 1, set 0 for full sampling)
 #
 require "crimage"
 require "./raytracer/common"

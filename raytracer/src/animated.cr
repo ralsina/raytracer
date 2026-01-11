@@ -9,8 +9,11 @@
 # With custom resolution:
 #   CRYSTAL_WORKERS=16 SIZE=800 ./bin/animated
 #
-# With antialiasing (slower but smoother):
+# With antialiasing (adaptive by default, faster):
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ./bin/animated
+#
+# With full non-adaptive antialiasing (prettier but slower):
+#   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ADAPTIVE_AA=0 ./bin/animated
 #
 # Requires SDL2 development libraries:
 #   Ubuntu/Debian: sudo apt install libsdl2-dev
