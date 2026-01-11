@@ -51,15 +51,37 @@ struct Color
   end
 
   def scale(k : Float64) : Color
-    Color.new(@r * k, @g * k, @b * k)
+    Color.new(safe_mul(@r, k), safe_mul(@g, k), safe_mul(@b, k))
   end
 
   def +(other : Color) : Color
-    Color.new(@r + other.r, @g + other.g, @b + other.b)
+    Color.new(safe_add(@r, other.r), safe_add(@g, other.g), safe_add(@b, other.b))
   end
 
   def *(other : Color) : Color
-    Color.new(@r * other.r, @g * other.g, @b * other.b)
+    Color.new(safe_mul(@r, other.r), safe_mul(@g, other.g), safe_mul(@b, other.b))
+  end
+
+  private def safe_add(a : Float64, b : Float64) : Float64
+    result = a + b
+    # Check for overflow by comparing with infinity
+    if result.abs > 1e100_f64
+      # Clamp to maximum safe value
+      (a > 0 ? 1.0_f64 : -1.0_f64) * 100.0_f64
+    else
+      result
+    end
+  end
+
+  private def safe_mul(a : Float64, b : Float64) : Float64
+    result = a * b
+    # Check for overflow
+    if result.abs > 1e100_f64
+      # Clamp to maximum safe value
+      (a * b > 0 ? 1.0_f64 : -1.0_f64) * 100.0_f64
+    else
+      result
+    end
   end
 
   def self.to_drawing_color(c : Color) : Tuple(UInt8, UInt8, UInt8)
