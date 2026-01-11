@@ -383,37 +383,88 @@ class RayTracer
           recenter_y = -((y - (height >> 1)) / (height << 1)).to_f64
 
           width.times do |x|
-            # Multi-sample for antialiasing
+            # Smart antialiasing: detect edges and adapt sample count
             r_sum = 0.0_f64
             g_sum = 0.0_f64
             b_sum = 0.0_f64
+            actual_samples = 0
 
-            samples.times do |sample|
-              # Deterministic jitter pattern based on pixel position and sample index
-              # Using a simple Halton-like sequence for well-distributed samples
-              if samples == 1
-                jitter_x = 0.0_f64
-                jitter_y = 0.0_f64
-              else
-                # Use sample index for consistent sub-pixel positions
-                sample_x = (sample * 7) % samples
-                sample_y = (sample * 11) % samples
-                jitter_x = (sample_x.to_f64 / samples.to_f64 - 0.5) / width
-                jitter_y = (sample_y.to_f64 / samples.to_f64 - 0.5) / height
-              end
-
-              recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_x).to_f64
-              recenter_y_jittered = recenter_y + jitter_y
-              ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+            if samples == 1
+              # Single sample at center
+              recenter_x = ((x - (width >> 1)) / (width << 1)).to_f64
+              ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y))).norm
               color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
-
               r_sum += color.r
               g_sum += color.g
               b_sum += color.b
+              actual_samples = 1
+            else
+              # Multi-sample with adaptive edge detection
+              # Jitter offsets for left and right edges of pixel
+              jitter_left = -0.25_f64 / width
+              jitter_right = 0.25_f64 / width
+              jitter_top = -0.25_f64 / height
+              jitter_bottom = 0.25_f64 / height
+
+              # Sample left edge
+              recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_left).to_f64
+              recenter_y_jittered = recenter_y + jitter_top
+              ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+              color_left = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+
+              # Sample right edge
+              recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_right).to_f64
+              recenter_y_jittered = recenter_y + jitter_top
+              ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+              color_right = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+
+              # Check for edge: if left and right differ significantly, use more samples
+              color_diff = (color_left.r - color_right.r).abs +
+                           (color_left.g - color_right.g).abs +
+                           (color_left.b - color_right.b).abs
+
+              if color_diff > 0.1_f64 && samples >= 4
+                # Edge detected! Use 4 corner samples
+                # Left top
+                r_sum += color_left.r
+                g_sum += color_left.g
+                b_sum += color_left.b
+
+                # Right top
+                r_sum += color_right.r
+                g_sum += color_right.g
+                b_sum += color_right.b
+
+                # Left bottom
+                recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_left).to_f64
+                recenter_y_jittered = recenter_y + jitter_bottom
+                ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+                color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+                r_sum += color.r
+                g_sum += color.g
+                b_sum += color.b
+
+                # Right bottom
+                recenter_x = ((x - (width >> 1)) / (width << 1) + jitter_right).to_f64
+                recenter_y_jittered = recenter_y + jitter_bottom
+                ray_dir = (cam_forward + (cam_right.scale(recenter_x) + cam_up.scale(recenter_y_jittered))).norm
+                color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
+                r_sum += color.r
+                g_sum += color.g
+                b_sum += color.b
+
+                actual_samples = 4
+              else
+                # No edge, just average left and right samples
+                r_sum = (color_left.r + color_right.r) * 0.5_f64
+                g_sum = (color_left.g + color_right.g) * 0.5_f64
+                b_sum = (color_left.b + color_right.b) * 0.5_f64
+                actual_samples = 1
+              end
             end
 
             # Average the samples
-            avg_color = Color.new(r_sum / samples, g_sum / samples, b_sum / samples)
+            avg_color = Color.new(r_sum / actual_samples, g_sum / actual_samples, b_sum / actual_samples)
 
             offset = row_offset + (x * 4)
             buffer[offset] = (avg_color.r.clamp(0.0_f64, 1.0_f64) * 255).to_u8
