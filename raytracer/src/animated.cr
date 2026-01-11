@@ -14,8 +14,8 @@
 require "sdl"
 require "./raytracer/common"
 
-WIDTH          = 600
-HEIGHT         = 600
+WIDTH          = 500
+HEIGHT         = 500
 
 # Animated scene with time-based animations
 class AnimatedScene < DefaultScene
