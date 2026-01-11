@@ -15,6 +15,9 @@
 # With full non-adaptive antialiasing (prettier but slower):
 #   CRYSTAL_WORKERS=16 AA_SAMPLES=4 ADAPTIVE_AA=0 ./bin/animated
 #
+# With custom reflection depth (default 5):
+#   CRYSTAL_WORKERS=16 MAX_DEPTH=10 ./bin/animated
+#
 # Requires SDL2 development libraries:
 #   Ubuntu/Debian: sudo apt install libsdl2-dev
 #   Arch: sudo pacman -S sdl2

@@ -286,7 +286,11 @@ class Scene
 end
 
 class RayTracer
-  MAX_DEPTH = 5
+  getter max_depth : Int32
+
+  def initialize
+    @max_depth = (ENV["MAX_DEPTH"]? || "5").to_i
+  end
 
   def intersections(ray : Ray, scene : Scene) : Intersection?
     closest = Float64::INFINITY
@@ -319,7 +323,7 @@ class RayTracer
     dot_val = normal.dot(d)
     reflect_dir = d - (normal.scale(2.0_f64 * dot_val))
     natural_color = COLOR_BACKGROUND + get_natural_color(isect.thing, pos, normal, reflect_dir, scene)
-    reflected_color = depth >= MAX_DEPTH ? COLOR_GREY : get_reflection_color(isect.thing, pos, normal, reflect_dir, scene, depth)
+    reflected_color = depth >= max_depth ? COLOR_GREY : get_reflection_color(isect.thing, pos, normal, reflect_dir, scene, depth)
     natural_color + reflected_color
   end
 

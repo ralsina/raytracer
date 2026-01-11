@@ -22,6 +22,7 @@
 #   SIZE - Image size (default 500, square images)
 #   AA_SAMPLES - Antialiasing samples (default 1, use 4-32 for AA)
 #   ADAPTIVE_AA - Adaptive mode (default 1, set 0 for full sampling)
+#   MAX_DEPTH - Maximum reflection bounces (default 5)
 #
 require "crimage"
 require "./raytracer/common"
