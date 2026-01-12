@@ -12,8 +12,10 @@
 #   This Crystal version: ~7ms (~80x faster)
 #   Rust version: ~7ms (comparable)
 #
+require "benchmark"
 require "crimage"
 require "mutex"
+require "wait_group"
 
 struct Vector
   getter x : Float32
@@ -23,18 +25,22 @@ struct Vector
   def initialize(@x : Float32, @y : Float32, @z : Float32)
   end
 
+  @[AlwaysInline]
   def scale(k : Float32) : Vector
     Vector.new(@x * k, @y * k, @z * k)
   end
 
+  @[AlwaysInline]
   def -(other : Vector) : Vector
     Vector.new(@x - other.x, @y - other.y, @z - other.z)
   end
 
+  @[AlwaysInline]
   def +(other : Vector) : Vector
     Vector.new(@x + other.x, @y + other.y, @z + other.z)
   end
 
+  @[AlwaysInline]
   def dot(other : Vector) : Float32
     @x * other.x + @y * other.y + @z * other.z
   end
@@ -49,6 +55,7 @@ struct Vector
     scale(1.0_f32 / mag_val)
   end
 
+  @[AlwaysInline]
   def cross(other : Vector) : Vector
     Vector.new(@y * other.z - @z * other.y, @z * other.x - @x * other.z, @x * other.y - @y * other.x)
   end
@@ -62,23 +69,19 @@ struct Color
   def initialize(@r : Float32, @g : Float32, @b : Float32)
   end
 
+  @[AlwaysInline]
   def scale(k : Float32) : Color
     Color.new(@r * k, @g * k, @b * k)
   end
 
+  @[AlwaysInline]
   def +(other : Color) : Color
     Color.new(@r + other.r, @g + other.g, @b + other.b)
   end
 
+  @[AlwaysInline]
   def *(other : Color) : Color
     Color.new(@r * other.r, @g * other.g, @b * other.b)
-  end
-
-  def self.to_drawing_color(c : Color) : Tuple(UInt8, UInt8, UInt8)
-    r = (c.r.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-    g = (c.g.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-    b = (c.b.clamp(0.0_f32, 1.0_f32) * 255).to_u8
-    {r, g, b}
   end
 end
 
@@ -276,13 +279,16 @@ class RayTracer
     color = COLOR_DEFAULT_COLOR
     lights = scene.lights
     surface = thing.surface
+    roughness = surface.roughness  # Cache this, called 1M times per frame
 
     lights.each do |light|
       ldis = light.pos - pos
+      ldist_sq = ldis.dot(ldis)  # Squared distance
       livec = ldis.norm
       neat_isect = test_ray(Ray.new(pos, livec), scene)
 
-      is_in_shadow = neat_isect && neat_isect <= ldis.mag
+      # Compare squared distances to avoid sqrt
+      is_in_shadow = neat_isect && (neat_isect * neat_isect) <= ldist_sq
       next if is_in_shadow
 
       illum = livec.dot(norm)
@@ -290,8 +296,9 @@ class RayTracer
 
       lcolor = light.color.scale(illum)
 
-      specular = livec.dot(rd.norm)
-      scolor = specular > 0 ? light.color.scale(specular ** surface.roughness) : COLOR_DEFAULT_COLOR
+      # rd is already normalized (reflection of unit vector), skip redundant norm()
+      specular = livec.dot(rd)
+      scolor = specular > 0 ? light.color.scale(specular ** roughness) : COLOR_DEFAULT_COLOR
 
       color = color + (surface.diffuse(pos) * lcolor) + (surface.specular(pos) * scolor)
     end
@@ -299,74 +306,61 @@ class RayTracer
     color
   end
 
-  def get_point(x : Int32, y : Int32, screen_width : Int32, screen_height : Int32, camera : Camera) : Vector
-    recenter_x = (x - (screen_width * 0.5)) / (screen_width * 2)
-    recenter_y = -(y - (screen_height * 0.5)) / (screen_height * 2)
-    (camera.forward + (camera.right.scale(recenter_x) + camera.up.scale(recenter_y))).norm
+  def render(scene : Scene, width : Int32, height : Int32) : CrImage::RGBA
+    buffer = Bytes.new(width * height * 4)
+    render_to_buffer(scene, width, height, buffer)
+    CrImage::RGBA.from_buffer(buffer, width, height)
   end
 
-  def render(scene : Scene, width : Int32, height : Int32) : CrImage::RGBA
+  def render_to_buffer(scene : Scene, width : Int32, height : Int32, buffer : Bytes) : Nil
     num_threads = (ENV["CRYSTAL_WORKERS"]? || "8").to_i
-    buffer = Bytes.new(width * height * 4)
 
-    # Work stealing using a mutex-protected bitmap
-    row_taken = Array.new(height, false)
-    mutex = Mutex.new
-    done_channel = Channel(Nil).new
+    # Work stealing using a mutex-protected row counter
+    next_row = Atomic(Int32).new(0)
+    wg = WaitGroup.new(num_threads)
 
     things = scene.things
     lights = scene.lights
     camera_pos = scene.camera.pos
     camera = scene.camera
+    cam_forward = camera.forward
+    cam_right = camera.right
+    cam_up = camera.up
 
     num_threads.times do |thread_idx|
       spawn do
         local_scene = Scene.new(things, lights, camera)
-        cam_forward = camera.forward
-        cam_right = camera.right
-        cam_up = camera.up
-        current_pos = thread_idx
 
         loop do
-          # Find next unclaimed row using work stealing
-          y = -1
-          mutex.synchronize do
-            while current_pos < height
-              unless row_taken[current_pos]
-                row_taken[current_pos] = true
-                y = current_pos
-                break
-              end
-              current_pos += 1
-            end
-          end
-
-          # No more rows available
-          break if y == -1
+          # Get next row atomically
+          y = next_row.add(1)
+          break if y >= height
 
           row_offset = y * width * 4
           recenter_y = -((y - (height >> 1)) / (height << 1)).to_f32
           up_scaled = cam_up.scale(recenter_y)
+          forward_plus_up = cam_forward + up_scaled  # Pre-compute, constant per row
 
+          offset = row_offset
           width.times do |x|
             recenter_x = ((x - (width >> 1)) / (width << 1)).to_f32
-            ray_dir = (cam_forward + (cam_right.scale(recenter_x) + up_scaled)).norm
+            ray_dir = (forward_plus_up + cam_right.scale(recenter_x)).norm
             color = trace_ray(Ray.new(camera_pos, ray_dir), local_scene, 0)
 
-            offset = row_offset + (x * 4)
             buffer[offset] = (color.r.clamp(0.0_f32, 1.0_f32) * 255).to_u8
             buffer[offset + 1] = (color.g.clamp(0.0_f32, 1.0_f32) * 255).to_u8
             buffer[offset + 2] = (color.b.clamp(0.0_f32, 1.0_f32) * 255).to_u8
             buffer[offset + 3] = 255_u8
+            offset += 4
           end
         end
 
-        done_channel.send(nil)
+        wg.done
       end
     end
 
     # Wait for all threads to complete
-    num_threads.times { done_channel.receive }
+    wg.wait
 
     # Create image from the filled buffer
     CrImage::RGBA.from_buffer(buffer, width, height)
@@ -403,11 +397,21 @@ height = 500
 
 default_scene = DefaultScene.new
 scene = default_scene.to_scene
-
-t1 = Time.monotonic
 ray_tracer = RayTracer.new
-img = ray_tracer.render(scene, width, height)
-t2 = Time.monotonic - t1
 
-puts "Completed in #{(t2.total_milliseconds).round(3)} ms"
+puts "Benchmarking #{width}x#{height} render..."
+puts "Workers: #{(ENV["CRYSTAL_WORKERS"]? || "8")}"
+puts ""
+
+# Pre-allocate buffer for benchmarking
+benchmark_buffer = Bytes.new(width * height * 4)
+
+Benchmark.ips(warmup: 4.seconds, calculation: 10.seconds) do |x|
+  x.report("render") do
+    ray_tracer.render_to_buffer(scene, width, height, benchmark_buffer)
+  end
+end
+
+# Save one image for verification
+img = ray_tracer.render(scene, width, height)
 CrImage::PNG.write("crystal-raytracer.png", img)
