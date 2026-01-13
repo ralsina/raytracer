@@ -8,13 +8,20 @@ Ported from [github.com/edin/raytracer](https://github.com/edin/raytracer) (Ruby
 
 ## Performance
 
+**Benchmark System:**
+- CPU: AMD Ryzen 5 5600H with Radeon Graphics
+- Cores/Threads: 6 cores / 12 threads
+- Workers: 16
+
 Renders a 500x500 image with reflections, shadows, and multiple colored lights:
 
 | Version | Time | Speedup |
 |---------|------|---------|
 | Ruby original | ~550ms | 1x |
-| Crystal (final) | <7ms | **80x faster** |
+| Crystal (final) | ~6.6ms | **83x faster** |
 | Rust version | ~7ms | comparable |
+
+> **Note:** Actual render times depend heavily on hardware. The important comparison is the relative speedup between implementations (Ruby vs Crystal vs Rust), which should be consistent across different systems.
 
 That you can see using the "benchmark" binary. However, that binary (while equivalent
 to the others in the original benchmark repo) is buggy (like others in the original
